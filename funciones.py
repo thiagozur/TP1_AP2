@@ -1,4 +1,6 @@
 import numpy as np
+import pandas as pd
+from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 
 def calc_m(rho, dim):
     m = rho * dim[2]
@@ -134,3 +136,46 @@ def calc_radforced(f, dim, c0 = 343):
     sf = 0.5 * (np.log(k0 * np.sqrt(l1 * l2)) - lamb)
 
     return sf
+
+def save_xlsx(res, material):
+    with pd.ExcelWriter(f'./res/resultados_{material.tipo.lower()}_{material.dim[0]}x{material.dim[1]}x{str(material.dim[2]).replace(".", ",")}.xlsx', engine = 'openpyxl') as writer:
+        res.to_excel(writer, sheet_name = 'R')
+        worksheet = writer.sheets['R']
+
+        relleno_encabezado = PatternFill(start_color = '1F497D', end_color = '1F497D', fill_type = 'solid')
+        fuente_encabezado = Font(name = 'Calibri', size = 11, bold = True, color = 'FFFFFF')
+        fuente_data = Font(name = 'Calibri', size = 11)
+        fuente_modelos = Font(name = 'Calibri', size = 11, bold = True)
+        borde_fino = Border(
+            left = Side(style = 'thin', color = 'D9D9D9'),
+            right = Side(style = 'thin', color = 'D9D9D9'),
+            top = Side(style = 'thin', color = 'D9D9D9'),
+            bottom = Side(style = 'thin', color = 'D9D9D9')
+        )
+
+        worksheet.cell(row = 1, column = 1).value = 'Modelo / Frecuencia (Hz)'
+        worksheet.cell(row =1, column = 1).font = fuente_encabezado
+        worksheet.cell(row = 1, column = 1).fill = relleno_encabezado
+        worksheet.cell(row = 1, column = 1).alignment = Alignment(horizontal = "center", vertical = "center")
+        worksheet.column_dimensions['A'].width = 24
+
+        for col_idx in range(2, len(res.columns) + 2):
+            cell = worksheet.cell(row = 1, column = col_idx)
+            cell.font = fuente_encabezado
+            cell.fill = relleno_encabezado
+            cell.alignment = Alignment(horizontal = "center", vertical = "center")
+
+            letra_col = cell.column_letter
+            worksheet.column_dimensions[letra_col].width = 10
+        
+        for row_idx in range(2, len(res.index) + 2):
+            worksheet.cell(row = row_idx, column = 1).font = fuente_modelos
+            worksheet.cell(row = row_idx, column = 1).border = borde_fino
+
+            for col_idx in range(2, len(res.columns) + 2):
+                cell = worksheet.cell(row = row_idx, column = col_idx)
+                cell.font = fuente_data
+                cell.border = borde_fino
+                cell.number_format = '0.0'
+                cell.alignment = Alignment(horizontal = "right")
+    return
