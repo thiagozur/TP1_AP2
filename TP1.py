@@ -105,7 +105,6 @@ class AppR(ctk.CTk):
         #variable índice de material
         self.ind_sel = 9
 
-
     def cambiar_material(self, mat):
         self.ind_sel = mats.index(mat)
     
