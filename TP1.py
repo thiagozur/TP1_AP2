@@ -70,17 +70,17 @@ class AppR(ctk.CTk):
         self.menu_ind.set(mats[9])
 
         #dimensiones
-        self.label_ancho = ctk.CTkLabel(self.sidebar, text = 'Ancho (m):')
-        self.label_ancho.pack(padx = 20, pady = 5, anchor = 'w')
-        self.input_ancho = ctk.CTkEntry(self.sidebar, placeholder_text = '7')
-        self.input_ancho.insert(0, '7')
-        self.input_ancho.pack(padx = 20, pady = 5, fill = 'x')
-
         self.label_alto = ctk.CTkLabel(self.sidebar, text = 'Alto (m):')
         self.label_alto.pack(padx = 20, pady = 5, anchor = 'w')
         self.input_alto = ctk.CTkEntry(self.sidebar, placeholder_text = '3')
         self.input_alto.insert(0, '3')
         self.input_alto.pack(padx = 20, pady = 5, fill = 'x')
+
+        self.label_ancho = ctk.CTkLabel(self.sidebar, text = 'Ancho (m):')
+        self.label_ancho.pack(padx = 20, pady = 5, anchor = 'w')
+        self.input_ancho = ctk.CTkEntry(self.sidebar, placeholder_text = '7')
+        self.input_ancho.insert(0, '7')
+        self.input_ancho.pack(padx = 20, pady = 5, fill = 'x')
 
         self.label_espesor = ctk.CTkLabel(self.sidebar, text = 'Espesor (m):')
         self.label_espesor.pack(padx = 20, pady = 5, anchor = 'w')
@@ -116,7 +116,7 @@ class AppR(ctk.CTk):
         self.ax.set_ylabel('R [dB]')
 
         if material != None:
-            self.ax.set_title(f'R para un panel simple de {material.tipo.lower()} de {material.dim[0]}m x {material.dim[1]}m x {str(material.dim[2]).replace(".", ",")}m', fontsize = '16')
+            self.ax.set_title(f'R para un panel simple de {material.tipo.lower()} de {str(material.dim[0]).replace(".", ",")}m x {str(material.dim[1]).replace(".", ",")}m x {str(material.dim[2]).replace(".", ",")}m', fontsize = '16')
         else:
             self.ax.set_title('')
 
@@ -128,7 +128,7 @@ class AppR(ctk.CTk):
 
     def calcular(self):
         try:
-            dim = (float(self.input_alto.get()), float(self.input_ancho.get()), float(self.input_espesor.get()))
+            dim = (float(self.input_alto.get().replace(',', '.')), float(self.input_ancho.get().replace(',', '.')), float(self.input_espesor.get().replace(',', '.')))
             ind = self.ind_sel
 
             #instanciación de un objeto de la clase 'Material'
