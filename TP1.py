@@ -124,11 +124,11 @@ class AppR(ctk.CTk):
         self.ax.set_ylim(0, 130)
         self.ax.grid(True, which = 'both', ls = '--', alpha = 0.5)
         self.ax.set_xticks(frecuencias)
-        self.ax.set_xticklabels([str(int(f)) for f in frecuencias], rotation = 45)
+        self.ax.set_xticklabels([str(int(f)) if float(f).is_integer() else float(f) for f in frecuencias], rotation = 45)
 
     def calcular(self):
         try:
-            dim = (3, 7, float(self.input_espesor.get()))
+            dim = (float(self.input_alto.get()), float(self.input_ancho.get()), float(self.input_espesor.get()))
             ind = self.ind_sel
 
             #instanciación de un objeto de la clase 'Material'
