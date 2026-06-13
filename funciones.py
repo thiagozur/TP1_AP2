@@ -18,8 +18,8 @@ def calc_fd(m, e, b, rho):
     fd = (e / (2 * np.pi * rho)) * np.sqrt(m / b)
     return fd
 
-def calc_f11(fc, dim, c0):
-    f11 = ((c0 ** 2) / (4 * fc)) * ((1 / dim[0]) + (1 / dim[1]))
+def calc_f11(fc, dim, c0 = 343):
+    f11 = ((c0 ** 2) / (4 * fc)) * ((1 / (dim[0] ** 2)) + (1 / (dim[1] ** 2)))
     return f11
 
 def calc_eta_total(f, m, eta):
@@ -63,7 +63,7 @@ def sigma(g, f, dim, c0 = 343):
 def shear(f, rho, e, sigma, dim):
     omega = 2 * np.pi * f
 
-    chi = ((1 + sigma) / (0.87 * 1.12 * sigma)) ** 2
+    chi = ((1 + sigma) / (0.87 + 1.12 * sigma)) ** 2
 
     x = (dim[2] ** 2) / 12
     qp = e / (1 - sigma ** 2)
@@ -93,7 +93,7 @@ def calc_radfree(f, fc, dim, c0 = 343):
     l1 = max(dim[0], dim[1])
     l2 = min(dim[0], dim[1])
 
-    sig1 = 1 / (np.sqrt(1 - fc / f)) if f > fc else 2
+    sig1 = 1 / (np.sqrt(1 - fc / f))
     sig2 = 4 * l1 * l2 * ((f / c0) ** 2)
     sig3 = np.sqrt((2 * np.pi * f * (l1 + l2)) / (16 * c0))
 
@@ -112,7 +112,6 @@ def calc_radfree(f, fc, dim, c0 = 343):
     
         if f < f11 and f11 < (0.5 * fc) and sig > sig2:
             sig = sig2
-
     else:
         if f < fc and sig2 < sig3:
             sig = sig2
@@ -135,10 +134,13 @@ def calc_radforced(f, dim, c0 = 343):
 
     sf = 0.5 * (np.log(k0 * np.sqrt(l1 * l2)) - lamb)
 
+    if sf > 2:
+        sf = 2
+
     return sf
 
 def save_xlsx(res, material):
-    with pd.ExcelWriter(f'./res/resultados_{material.tipo.lower()}_{material.dim[0]}x{material.dim[1]}x{str(material.dim[2]).replace(".", ",")}.xlsx', engine = 'openpyxl') as writer:
+    with pd.ExcelWriter(f'./res/resultados_{material.tipo.lower()}_{str(material.dim[0]).replace(".", ",")}x{str(material.dim[1]).replace(".", ",")}x{str(material.dim[2]).replace(".", ",")}.xlsx', engine = 'openpyxl') as writer:
         res.to_excel(writer, sheet_name = 'R')
         worksheet = writer.sheets['R']
 

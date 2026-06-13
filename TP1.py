@@ -14,7 +14,7 @@ from iso import iso
 class Material:
     def __init__(self, tipo, densidad, myoung, fperd, mpoisson, dimensiones):
         self.tipo = tipo
-        self.rho = int(densidad)
+        self.rho = float(densidad)
         self.e = float(myoung)
         self.eta = float(fperd)
         self.sigma = float(mpoisson)
@@ -46,7 +46,7 @@ class AppR(ctk.CTk):
 
         #creación y posicionamiento de componentes
         self.title('Calculadora de Aislamiento Acústico - Paneles Simples')
-        self.geometry("1200x700")
+        self.geometry("1200x800")
 
         self.grid_columnconfigure(0, weight = 1)
         self.grid_columnconfigure(1, weight = 3)
@@ -165,11 +165,15 @@ class AppR(ctk.CTk):
             self.ax.plot(frecuencias, r_sharp, label = 'Sharp')
             self.ax.plot(frecuencias, r_davy, label = 'Davy')
             self.ax.axvline(x=fc, color='black', ls='--', label = f'Frecuencia de coincidencia (≈{round(fc)} Hz)')
+            self.ax.axvline(x=fd, color='black', ls='--', label = f'Frecuencia de densidad (≈{round(fd)} Hz)')
             self.ax.legend(loc="upper left")
             self.canvas.draw()
 
         except ValueError:
             print('Ingrese números válidos')
+
+        except ZeroDivisionError:
+            print('las dimensiones no pueden ser cero')
 
 if __name__ == '__main__':
     app = AppR()
