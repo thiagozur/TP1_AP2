@@ -92,8 +92,7 @@ def shear(f, rho, e, sigma, dim):
 def calc_radfree(f, fc, dim, c0 = 343):
     l1 = max(dim[0], dim[1])
     l2 = min(dim[0], dim[1])
-
-    sig1 = 1 / (np.sqrt(1 - fc / f))
+    
     sig2 = 4 * l1 * l2 * ((f / c0) ** 2)
     sig3 = np.sqrt((2 * np.pi * f * (l1 + l2)) / (16 * c0))
 
@@ -101,7 +100,7 @@ def calc_radfree(f, fc, dim, c0 = 343):
 
     if f11 <= (0.5 * fc):
         if f >= fc:    
-            sig = sig1
+            sig =  1 / (np.sqrt(1 - fc / f))
         else:
             lamb = np.sqrt(f / fc)
             
@@ -115,8 +114,8 @@ def calc_radfree(f, fc, dim, c0 = 343):
     else:
         if f < fc and sig2 < sig3:
             sig = sig2
-        elif f > fc and sig1 < sig3:
-            sig = sig1
+        elif f > fc and  (1 / (np.sqrt(1 - fc / f))) < sig3:
+            sig =  1 / (np.sqrt(1 - fc / f))
         else:
             sig = sig3
 

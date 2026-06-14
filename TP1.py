@@ -86,11 +86,15 @@ class AppR(ctk.CTk):
         self.label_espesor.pack(padx = 20, pady = 5, anchor = 'w')
         self.input_espesor = ctk.CTkEntry(self.sidebar, placeholder_text = '0.02')
         self.input_espesor.insert(0, '0.02')
-        self.input_espesor.pack(padx = 20, pady = 5, fill = 'x')
+        self.input_espesor.pack(padx = 20, fill = 'x')
         
-        #botón
+        #botón calcular
         self.btn_calcular = ctk.CTkButton(self.sidebar, text = 'Calcular y graficar', command = self.calcular)
         self.btn_calcular.pack(padx = 20, pady = 30, fill = 'x')
+
+        #botón guardar
+        self.btn_guardar = ctk.CTkButton(self.sidebar, text = 'Guardar', command = self.guardar)
+        self.btn_guardar.pack(padx = 20, fill = 'x')
 
         #gráfico
         self.frame_grafico = ctk.CTkFrame(self, corner_radius = 10)
@@ -102,8 +106,37 @@ class AppR(ctk.CTk):
         self.canvas = FigureCanvasTkAgg(self.fig, master = self.frame_grafico)
         self.canvas.get_tk_widget().pack(padx=20, pady=20, fill='both', expand=True)
 
-        #variable índice de material
+        self.popup = None
+
+        #variable índice de material y material
         self.ind_sel = 9
+        self.material = None
+
+        #vectores de resultados
+        self.r_fisico_teorico = None
+        self.r_iso = None
+        self.r_cremer = None
+        self.r_sharp = None
+        self.r_davy = None
+
+        self.protocol('WM_DELETE_WINDOW', self.cerrar)
+    
+    def cerrar(self):
+        if self.popup and self.popup.winfo_exists():
+            if hasattr(self.popup, 'fade_id') and self.popup.fade_id:
+                self.popup.after_cancel(self.popup.fade_id)
+
+            self.popup.destroy()
+
+        try:
+            plt.close(self.fig)
+            self.canvas.get_tk_widget().destroy()
+        except:
+            pass
+        
+        self.update_idletasks()
+
+        self.destroy()
 
     def cambiar_material(self, mat):
         self.ind_sel = mats.index(mat)
@@ -125,55 +158,120 @@ class AppR(ctk.CTk):
         self.ax.set_xticks(frecuencias)
         self.ax.set_xticklabels([str(int(f)) if float(f).is_integer() else float(f) for f in frecuencias], rotation = 45)
 
+    def mostrar_error(self, error):
+        if hasattr(self, 'popup') and self.popup and self.popup.winfo_exists():
+            self.popup.destroy()
+
+        self.popup = ctk.CTkToplevel(self)
+        popup = self.popup
+        popup.title('Aviso')
+        
+        popup.attributes('-topmost', True)
+        popup.resizable(False, False)
+
+        popup_label = ctk.CTkLabel(
+            popup,
+            text = error,
+            font = ctk.CTkFont('Calibri', size = 20, weight = 'bold'),
+            text_color = "#000000"
+        )
+        popup_label.pack(expand = True, padx = 30, pady = 30)
+
+        popup.update_idletasks()
+
+        reqwidth = popup.winfo_reqwidth()
+        reqheight = popup.winfo_reqheight()
+
+        swidth = popup.winfo_screenwidth()
+        sheight = popup.winfo_screenheight()
+
+        posx = int((swidth - reqwidth) / 2)
+        posy = int((sheight - reqheight) / 2)
+
+        popup.geometry(f'{reqwidth}x{reqheight}+{posx}+{posy}')
+
+        popup.fade_id = None
+
+        def onclose():
+            if popup.winfo_exists():
+                if popup.fade_id:
+                    popup.after_cancel(popup.fade_id)
+                    popup.fade_id = None
+
+                popup.update_idletasks()
+                popup.destroy()
+                self.popup = None
+
+        def fade():
+            if not popup.winfo_exists():
+                return
+            
+            current_alpha = popup.attributes('-alpha')
+
+            if current_alpha > 0.05:
+                new_alpha = current_alpha - 0.05
+                popup.attributes('-alpha', new_alpha)
+
+                popup.fade_id = popup.after(30, fade)
+            else:
+                onclose()
+        
+        popup.protocol('WM_DELETE_WINDOW', onclose)
+        popup.fade_id = popup.after(2500, fade)
+
     def calcular(self):
         try:
             dim = (float(self.input_alto.get().replace(',', '.')), float(self.input_ancho.get().replace(',', '.')), float(self.input_espesor.get().replace(',', '.')))
             ind = self.ind_sel
 
-            #instanciación de un objeto de la clase 'Material'
-            material = Material(db.iloc[ind, 1], db.iloc[ind, 2], db.iloc[ind, 3], db.iloc[ind, 4], db.iloc[ind, 5], dim)
+            if any(n < 0 for n in dim):
+                self.mostrar_error('Advertencia: entrada inadecuada. Las dimensiones no pueden ser números negativos.')
+            else:
+                #instanciación de un objeto de la clase 'Material'
+                self.material = Material(db.iloc[ind, 1], db.iloc[ind, 2], db.iloc[ind, 3], db.iloc[ind, 4], db.iloc[ind, 5], dim)
 
-            #cálculo de la frecuencia crítica y de la frecuencia de densidad
-            fc = calc_fc(material.e, material.rho, material.dim, c)
-            fd = calc_fd(material.m, material.e, material.b, material.rho)
+                #cálculo de la frecuencia crítica y de la frecuencia de densidad
+                fc = calc_fc(self.material.e, self.material.rho, self.material.dim, c)
+                fd = calc_fd(self.material.m, self.material.e, self.material.b, self.material.rho)
 
-            #cálculo de r con los modelos
-            r_fisico_teorico = fisico_teorico(frecuencias, material.m, material.eta, fc, fd, rho0, c)
-            r_iso = iso(frecuencias, material.m, material.eta, material.dim, fc, rho0, c)
-            r_cremer = cremer(frecuencias, material.m, material.eta, fc, fd)
-            r_sharp = sharp(frecuencias, material.m, material.eta, fc, rho0, c)
-            r_davy = davy(frecuencias, material.rho, material.e, material.sigma, material.dim, material.m, material.eta, fc, rho0, c)
+                #cálculo de r con los modelos
+                self.r_fisico_teorico = fisico_teorico(frecuencias, self.material.m, self.material.eta, fc, fd, rho0, c)
+                self.r_iso = iso(frecuencias, self.material.m, self.material.eta, self.material.dim, fc, rho0, c)
+                self.r_cremer = cremer(frecuencias, self.material.m, self.material.eta, fc, fd)
+                self.r_sharp = sharp(frecuencias, self.material.m, self.material.eta, fc, rho0, c)
+                self.r_davy = davy(frecuencias, self.material.rho, self.material.e, self.material.sigma, self.material.dim, self.material.m, self.material.eta, fc, rho0, c)
 
-            #creación del array de resultados
-            data_R = [r_fisico_teorico, r_iso, r_cremer, r_sharp, r_davy]
-            modelos = ['Físico-teórico', 'ISO 12354-1', 'Cremer', 'Sharp', 'Davy']
-
-            res = pd.DataFrame(
-                data = data_R,
-                index = modelos,
-                columns = frecuencias
-            )
-
-            #guardado en formato excel
-            save_xlsx(res, material)
-
-            #graficación
-            self.configurar_ejes_grafico(material)
-            self.ax.plot(frecuencias, r_fisico_teorico, label = 'Físico-teórico')
-            self.ax.plot(frecuencias, r_iso, label = 'ISO 12354-1')
-            self.ax.plot(frecuencias, r_cremer, label = 'Cremer')
-            self.ax.plot(frecuencias, r_sharp, label = 'Sharp')
-            self.ax.plot(frecuencias, r_davy, label = 'Davy')
-            self.ax.axvline(x=fc, color='black', ls='--', label = f'Frecuencia de coincidencia (≈{round(fc)} Hz)')
-            self.ax.axvline(x=fd, color='black', ls='--', label = f'Frecuencia de densidad (≈{round(fd)} Hz)')
-            self.ax.legend(loc="upper left")
-            self.canvas.draw()
+                #graficación
+                self.configurar_ejes_grafico(self.material)
+                self.ax.plot(frecuencias, self.r_fisico_teorico, label = 'Físico-teórico')
+                self.ax.plot(frecuencias, self.r_iso, label = 'ISO 12354-1')
+                self.ax.plot(frecuencias, self.r_cremer, label = 'Cremer')
+                self.ax.plot(frecuencias, self.r_sharp, label = 'Sharp')
+                self.ax.plot(frecuencias, self.r_davy, label = 'Davy')
+                self.ax.axvline(x = fd, color = 'black', ls = '--', label = f'Frecuencia de densidad (≈{round(fd)} Hz)')
+                self.ax.axvline(x = fc, color = 'black', ls = '--', label = f'Frecuencia de coincidencia (≈{round(fc)} Hz)')
+                self.ax.legend(loc="upper left")
+                self.canvas.draw()
 
         except ValueError:
-            print('Ingrese números válidos')
+            self.mostrar_error('Advertencia: entrada inadecuada. Las dimensiones deben ser números válidos.')
 
         except ZeroDivisionError:
-            print('las dimensiones no pueden ser cero')
+            self.mostrar_error('Advertencia: entrada inadecuada. Las dimensiones no pueden ser cero.')
+
+    def guardar(self):
+        #creación del array de resultados
+                data_R = [self.r_fisico_teorico, self.r_iso, self.r_cremer, self.r_sharp, self.r_davy]
+                modelos = ['Físico-teórico', 'ISO 12354-1', 'Cremer', 'Sharp', 'Davy']
+
+                res = pd.DataFrame(
+                    data = data_R,
+                    index = modelos,
+                    columns = frecuencias
+                )
+
+                #guardado en formato excel
+                save_xlsx(res, self.material)
 
 if __name__ == '__main__':
     app = AppR()
