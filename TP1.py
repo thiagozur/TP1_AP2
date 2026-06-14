@@ -82,10 +82,10 @@ class AppR(ctk.CTk):
         self.input_ancho.insert(0, '7')
         self.input_ancho.pack(padx = 20, pady = 5, fill = 'x')
 
-        self.label_espesor = ctk.CTkLabel(self.sidebar, text = 'Espesor (m):')
+        self.label_espesor = ctk.CTkLabel(self.sidebar, text = 'Espesor (cm):')
         self.label_espesor.pack(padx = 20, pady = 5, anchor = 'w')
-        self.input_espesor = ctk.CTkEntry(self.sidebar, placeholder_text = '0.02')
-        self.input_espesor.insert(0, '0.02')
+        self.input_espesor = ctk.CTkEntry(self.sidebar, placeholder_text = '2')
+        self.input_espesor.insert(0, '2')
         self.input_espesor.pack(padx = 20, fill = 'x')
         
         #botón calcular
@@ -221,7 +221,7 @@ class AppR(ctk.CTk):
 
     def calcular(self):
         try:
-            dim = (float(self.input_alto.get().replace(',', '.')), float(self.input_ancho.get().replace(',', '.')), float(self.input_espesor.get().replace(',', '.')))
+            dim = (float(self.input_alto.get().replace(',', '.')), float(self.input_ancho.get().replace(',', '.')), float(self.input_espesor.get().replace(',', '.')) / 100)
             ind = self.ind_sel
 
             if any(n < 0 for n in dim):
