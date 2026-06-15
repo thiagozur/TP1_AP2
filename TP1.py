@@ -308,7 +308,8 @@ class AppR(ctk.CTk):
 
                 if self.check_fisico_teorico.get():
                     self.r_fisico_teorico = fisico_teorico(frecuencias, self.material.m, self.material.eta, fc, fd, rho0, c)
-                    graficar(self.ax, frecuencias, self.r_fisico_teorico, 'Físico-Teórico', '#E69F00') 
+                    graficar(self.ax, frecuencias, self.r_fisico_teorico, 'Físico-Teórico', '#E69F00')
+                    self.ax.axvline(x = fd, color = 'black', ls = '--', label = f'Frecuencia de densidad (≈{round(fd)} Hz)')
 
                 if self.check_iso.get():
                     self.r_iso = iso(frecuencias, self.material.m, self.material.eta, self.material.dim, fc, rho0, c)
@@ -317,6 +318,7 @@ class AppR(ctk.CTk):
                 if self.check_cremer.get():
                     self.r_cremer = cremer(frecuencias, self.material.m, self.material.eta, fc, fd)
                     graficar(self.ax, frecuencias, self.r_cremer, 'Cremer', "#3AA641")
+                    self.ax.axvline(x = fd, color = 'black', ls = '--', label = f'Frecuencia de densidad (≈{round(fd)} Hz)')
 
                 if self.check_sharp.get():
                     self.r_sharp = sharp(frecuencias, self.material.m, self.material.eta, fc, rho0, c)
@@ -326,7 +328,6 @@ class AppR(ctk.CTk):
                     self.r_davy = davy(frecuencias, self.material.rho, self.material.e, self.material.sigma, self.material.dim, self.material.m, self.material.eta, fc, rho0, c)
                     graficar(self.ax, frecuencias, self.r_davy, 'Davy', "#B51919")
 
-                self.ax.axvline(x = fd, color = 'black', ls = '--', label = f'Frecuencia de densidad (≈{round(fd)} Hz)')
                 self.ax.axvline(x = fc, color = 'black', ls = '--', label = f'Frecuencia de coincidencia (≈{round(fc)} Hz)')
                 self.ax.legend(loc="upper left")
                 self.canvas.draw()
