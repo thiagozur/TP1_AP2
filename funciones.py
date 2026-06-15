@@ -138,8 +138,8 @@ def calc_radforced(f, dim, c0 = 343):
 
     return sf
 
-def save_xlsx(res, material):
-    with pd.ExcelWriter(f'./res/resultados_{material.tipo.lower()}_{str(material.dim[0]).replace(".", ",")}x{str(material.dim[1]).replace(".", ",")}x{str(material.dim[2]).replace(".", ",")}.xlsx', engine = 'openpyxl') as writer:
+def save_xlsx(res, material, modelos):
+    with pd.ExcelWriter(f'./res/resultados_{material.tipo.lower()}_{str(material.dim[0]).replace(".", ",")}x{str(material.dim[1]).replace(".", ",")}x{str(material.dim[2]).replace(".", ",")} ({", ".join(modelos)}).xlsx', engine = 'openpyxl') as writer:
         res.to_excel(writer, sheet_name = 'R')
         worksheet = writer.sheets['R']
 
@@ -180,3 +180,7 @@ def save_xlsx(res, material):
                 cell.number_format = '0.0'
                 cell.alignment = Alignment(horizontal = "right")
     return
+
+def graficar(ax, f, r, nombre, color):
+    ax.plot(f, r, label = f'{nombre}', color = color)
+    ax.scatter(f, r, s = 20, color = color)

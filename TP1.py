@@ -3,7 +3,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import customtkinter as ctk
-from funciones import calc_m, calc_b, calc_fc, calc_fd, save_xlsx
+from funciones import calc_m, calc_b, calc_fc, calc_fd, save_xlsx, graficar
 from fisico_teorico import fisico_teorico
 from cremer import cremer
 from sharp import sharp
@@ -43,6 +43,12 @@ ctk.set_default_color_theme('blue')
 class AppR(ctk.CTk):
     def __init__(self):
         super().__init__()
+
+        self.check_fisico_teorico = ctk.BooleanVar(value = False)
+        self.check_iso = ctk.BooleanVar(value = False)
+        self.check_cremer = ctk.BooleanVar(value = False)
+        self.check_sharp = ctk.BooleanVar(value = False)
+        self.check_davy = ctk.BooleanVar(value = False)
 
         #creación y posicionamiento de componentes
         self.title('Calculadora de Aislamiento Acústico - Paneles Simples')
@@ -86,15 +92,66 @@ class AppR(ctk.CTk):
         self.label_espesor.pack(padx = 20, pady = 5, anchor = 'w')
         self.input_espesor = ctk.CTkEntry(self.sidebar, placeholder_text = '2')
         self.input_espesor.insert(0, '2')
-        self.input_espesor.pack(padx = 20, fill = 'x')
-        
-        #botón calcular
-        self.btn_calcular = ctk.CTkButton(self.sidebar, text = 'Calcular y graficar', command = self.calcular)
-        self.btn_calcular.pack(padx = 20, pady = 30, fill = 'x')
+        self.input_espesor.pack(padx = 20, pady = 10, fill = 'x')
+
+        #botón refresh
+        self.btn_calcular = ctk.CTkButton(self.sidebar, text = 'Aplicar dimensiones y material', command = self.calcular)
+        self.btn_calcular.pack(padx = 20,  pady = 20, fill = 'x')
+
+        #selectores de modelos
+        selector_fisico_teorico = ctk.CTkCheckBox(
+            self.sidebar,
+            text = 'Modelo Físico-Teórico',
+            variable = self.check_fisico_teorico,
+            command = self.calcular,
+            onvalue = True,
+            offvalue = False
+        )
+        selector_fisico_teorico.pack(padx = 20, pady = 5, anchor = 'w')
+
+        selector_iso = ctk.CTkCheckBox(
+            self.sidebar,
+            text = 'Modelo ISO 12354-1',
+            variable = self.check_iso,
+            command = self.calcular,
+            onvalue = True,
+            offvalue = False
+        )
+        selector_iso.pack(padx = 20, pady = 5, anchor = 'w')
+
+        selector_cremer = ctk.CTkCheckBox(
+            self.sidebar,
+            text = 'Modelo Cremer',
+            variable = self.check_cremer,
+            command = self.calcular,
+            onvalue = True,
+            offvalue = False
+        )
+        selector_cremer.pack(padx = 20, pady = 5, anchor = 'w')
+
+        selector_sharp = ctk.CTkCheckBox(
+            self.sidebar,
+            text = 'Modelo Sharp',
+            variable = self.check_sharp,
+            command = self.calcular,
+            onvalue = True,
+            offvalue = False
+        )
+        selector_sharp.pack(padx = 20, pady = 5, anchor = 'w')
+
+        selector_davy = ctk.CTkCheckBox(
+            self.sidebar,
+            text = 'Modelo Davy',
+            variable = self.check_davy,
+            command = self.calcular,
+            onvalue = True,
+            offvalue = False
+        )
+        selector_davy.pack(padx = 20, pady = 5, anchor = 'w')
 
         #botón guardar
         self.btn_guardar = ctk.CTkButton(self.sidebar, text = 'Guardar', command = self.guardar)
-        self.btn_guardar.pack(padx = 20, fill = 'x')
+        self.btn_guardar.pack(padx = 20, fill = 'x', pady = 20)
 
         #gráfico
         self.frame_grafico = ctk.CTkFrame(self, corner_radius = 10)
@@ -108,7 +165,7 @@ class AppR(ctk.CTk):
 
         self.popup = None
 
-        #variable índice de material y material
+        #variables de selectores
         self.ind_sel = 9
         self.material = None
 
@@ -219,6 +276,17 @@ class AppR(ctk.CTk):
         popup.protocol('WM_DELETE_WINDOW', onclose)
         popup.fade_id = popup.after(2500, fade)
 
+    def refrescar_datos(self):
+        try:
+            self.dim = (float(self.input_alto.get().replace(',', '.')), float(self.input_ancho.get().replace(',', '.')), float(self.input_espesor.get().replace(',', '.')) / 100)
+            ind = self.ind_sel  
+            self.configurar_ejes_grafico(self.material)
+        except ValueError:
+            self.mostrar_error('Advertencia: entrada inadecuada. Las dimensiones deben ser números válidos.')
+
+        except ZeroDivisionError:
+            self.mostrar_error('Advertencia: entrada inadecuada. Las dimensiones no pueden ser cero.')
+
     def calcular(self):
         try:
             dim = (float(self.input_alto.get().replace(',', '.')), float(self.input_ancho.get().replace(',', '.')), float(self.input_espesor.get().replace(',', '.')) / 100)
@@ -234,20 +302,30 @@ class AppR(ctk.CTk):
                 fc = calc_fc(self.material.e, self.material.rho, self.material.dim, c)
                 fd = calc_fd(self.material.m, self.material.e, self.material.b, self.material.rho)
 
-                #cálculo de r con los modelos
-                self.r_fisico_teorico = fisico_teorico(frecuencias, self.material.m, self.material.eta, fc, fd, rho0, c)
-                self.r_iso = iso(frecuencias, self.material.m, self.material.eta, self.material.dim, fc, rho0, c)
-                self.r_cremer = cremer(frecuencias, self.material.m, self.material.eta, fc, fd)
-                self.r_sharp = sharp(frecuencias, self.material.m, self.material.eta, fc, rho0, c)
-                self.r_davy = davy(frecuencias, self.material.rho, self.material.e, self.material.sigma, self.material.dim, self.material.m, self.material.eta, fc, rho0, c)
-
-                #graficación
                 self.configurar_ejes_grafico(self.material)
-                self.ax.plot(frecuencias, self.r_fisico_teorico, label = 'Físico-teórico')
-                self.ax.plot(frecuencias, self.r_iso, label = 'ISO 12354-1')
-                self.ax.plot(frecuencias, self.r_cremer, label = 'Cremer')
-                self.ax.plot(frecuencias, self.r_sharp, label = 'Sharp')
-                self.ax.plot(frecuencias, self.r_davy, label = 'Davy')
+
+                #cálculo de r con los modelos
+
+                if self.check_fisico_teorico.get():
+                    self.r_fisico_teorico = fisico_teorico(frecuencias, self.material.m, self.material.eta, fc, fd, rho0, c)
+                    graficar(self.ax, frecuencias, self.r_fisico_teorico, 'Físico-Teórico', '#E69F00') 
+
+                if self.check_iso.get():
+                    self.r_iso = iso(frecuencias, self.material.m, self.material.eta, self.material.dim, fc, rho0, c)
+                    graficar(self.ax, frecuencias, self.r_iso, 'ISO 12354-1', '#56B4E9')  
+
+                if self.check_cremer.get():
+                    self.r_cremer = cremer(frecuencias, self.material.m, self.material.eta, fc, fd)
+                    graficar(self.ax, frecuencias, self.r_cremer, 'Cremer', "#3AA641")
+
+                if self.check_sharp.get():
+                    self.r_sharp = sharp(frecuencias, self.material.m, self.material.eta, fc, rho0, c)
+                    graficar(self.ax, frecuencias, self.r_sharp, 'Sharp', "#E982F3")
+                
+                if self.check_davy.get():
+                    self.r_davy = davy(frecuencias, self.material.rho, self.material.e, self.material.sigma, self.material.dim, self.material.m, self.material.eta, fc, rho0, c)
+                    graficar(self.ax, frecuencias, self.r_davy, 'Davy', "#B51919")
+
                 self.ax.axvline(x = fd, color = 'black', ls = '--', label = f'Frecuencia de densidad (≈{round(fd)} Hz)')
                 self.ax.axvline(x = fc, color = 'black', ls = '--', label = f'Frecuencia de coincidencia (≈{round(fc)} Hz)')
                 self.ax.legend(loc="upper left")
@@ -263,6 +341,14 @@ class AppR(ctk.CTk):
         #creación del array de resultados
                 data_R = [self.r_fisico_teorico, self.r_iso, self.r_cremer, self.r_sharp, self.r_davy]
                 modelos = ['Físico-teórico', 'ISO 12354-1', 'Cremer', 'Sharp', 'Davy']
+                
+                pares = [(d, modelo) for d, modelo in zip(data_R, modelos) if d is not None]
+                print(pares)
+
+                if pares:
+                    data_R, modelos = map(list, zip(*pares))
+                else:
+                    data_R, modelos = [], []
 
                 res = pd.DataFrame(
                     data = data_R,
@@ -271,7 +357,7 @@ class AppR(ctk.CTk):
                 )
 
                 #guardado en formato excel
-                save_xlsx(res, self.material)
+                save_xlsx(res, self.material, modelos)
 
 if __name__ == '__main__':
     app = AppR()
