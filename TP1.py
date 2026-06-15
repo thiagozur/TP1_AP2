@@ -338,26 +338,28 @@ class AppR(ctk.CTk):
             self.mostrar_error('Advertencia: entrada inadecuada. Las dimensiones no pueden ser cero.')
 
     def guardar(self):
-        #creación del array de resultados
-                data_R = [self.r_fisico_teorico, self.r_iso, self.r_cremer, self.r_sharp, self.r_davy]
-                modelos = ['Físico-teórico', 'ISO 12354-1', 'Cremer', 'Sharp', 'Davy']
-                
-                pares = [(d, modelo) for d, modelo in zip(data_R, modelos) if d is not None]
-                print(pares)
+        try:
+            data_R = [self.r_fisico_teorico, self.r_iso, self.r_cremer, self.r_sharp, self.r_davy]
+            modelos = ['Físico-teórico', 'ISO 12354-1', 'Cremer', 'Sharp', 'Davy']
+                    
+            pares = [(d, modelo) for d, modelo in zip(data_R, modelos) if d is not None]
 
-                if pares:
-                    data_R, modelos = map(list, zip(*pares))
-                else:
-                    data_R, modelos = [], []
+            if pares:
+                data_R, modelos = map(list, zip(*pares))
 
                 res = pd.DataFrame(
-                    data = data_R,
-                    index = modelos,
-                    columns = frecuencias
+                data = data_R,
+                index = modelos,
+                columns = frecuencias
                 )
 
                 #guardado en formato excel
                 save_xlsx(res, self.material, modelos)
+
+            else:
+                self.mostrar_error('Error de guardado. Seleccione al menos un modelo')   
+        except:
+            self.mostrar_error('Error de guardado. Introduzca los datos correctamente')
 
 if __name__ == '__main__':
     app = AppR()
