@@ -239,10 +239,10 @@ def save_xlsx(res, material, modelos):
 
         grafico.layout = Layout(
             manualLayout = ManualLayout(
-                x = 0.02,   # Mueve la cuadrícula a la derecha (da aire al eje Y: R [dB])
-                y = 0.02,   # Baja la cuadrícula (da aire al título principal)
-                w = 0.75,   # Achica el ancho de la cuadrícula (da espacio a la leyenda)
-                h = 0.65    # Achica el alto de la cuadrícula (da aire abajo al eje X: Frecuencia)
+                x = 0.02,
+                y = 0.02,
+                w = 0.75,
+                h = 0.65
             )
         )
 
