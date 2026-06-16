@@ -294,7 +294,6 @@ class AppR(ctk.CTk):
                 self.configurar_ejes_grafico(self.material)
 
                 #cálculo de r con los modelos
-
                 if self.check_fisico_teorico.get():
                     self.r_fisico_teorico = fisico_teorico(frecuencias, self.material.m, self.material.eta, fc, fd, rho0, c)
                     graficar(self.ax, frecuencias, self.r_fisico_teorico, 'Físico-Teórico', '#E69F00')
