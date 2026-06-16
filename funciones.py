@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+from openpyxl.utils import get_column_letter
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from openpyxl.chart import LineChart, Reference
 from openpyxl.chart.series import SeriesLabel, Series
@@ -216,6 +217,10 @@ def save_xlsx(res, material, modelos):
         worksheet.column_dimensions['A'].width = 24
 
         col_fin_valores = len(res.columns) + 1
+
+        for i in range(2, 33):
+            print(i, get_column_letter(i))
+            worksheet.column_dimensions[get_column_letter(i)].width = 15
 
         for col_idx in range(2, col_fin_valores + 1):
             cell = worksheet.cell(row=4, column=col_idx)
