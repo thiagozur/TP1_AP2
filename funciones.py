@@ -1,7 +1,12 @@
 import numpy as np
 import pandas as pd
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
-from openpyxl.utils import get_column_letter
+from openpyxl.chart import LineChart, Reference
+from openpyxl.chart.series import SeriesLabel, Series
+from openpyxl.chart.axis import ChartLines
+from openpyxl.chart.legend import Legend
+from openpyxl.chart.data_source import NumDataSource, NumRef
+from openpyxl.chart.layout import Layout, ManualLayout
 
 def calc_m(rho, dim):
     m = rho * dim[2]
@@ -155,9 +160,9 @@ def save_xlsx(res, material, modelos):
         res.to_excel(writer, sheet_name = 'R', startrow = 3)
         worksheet = writer.sheets['R']
 
-        relleno_gris = PatternFill(start_color="696969", end_color='696969', fill_type='solid')
-        relleno_gris_claro = PatternFill(start_color="BABABA", end_color='BABABA', fill_type='solid')
-        fuente_encabezado_gris = Font(name='Calibri', size = 11, bold=True, color="FFFFFF")
+        relleno_gris = PatternFill(start_color='696969', end_color='696969', fill_type='solid')
+        relleno_gris_claro = PatternFill(start_color='BABABA', end_color='BABABA', fill_type='solid')
+        fuente_encabezado_gris = Font(name='Calibri', size = 11, bold=True, color='FFFFFF')
         relleno_encabezado = PatternFill(start_color = '1F497D', end_color = '1F497D', fill_type = 'solid')
         fuente_encabezado = Font(name = 'Calibri', size = 11, bold = True, color = 'FFFFFF')
         fuente_data = Font(name = 'Calibri', size = 11)
@@ -173,26 +178,26 @@ def save_xlsx(res, material, modelos):
             cell = worksheet.cell(row = 1, column = col_idx)
             cell.font = fuente_encabezado_gris
             cell.fill = relleno_gris
-            cell.alignment = Alignment(horizontal = "center", vertical = "center", wrap_text = True)
+            cell.alignment = Alignment(horizontal = 'center', vertical = 'center', wrap_text = True)
             cell.border = borde_fino
             
         for col_idx in range(1, len(mat_in.columns) + 1):
             cell = worksheet.cell(row = 2, column = col_idx)
             cell.font = fuente_data
             cell.fill = relleno_gris_claro
-            cell.alignment = Alignment(horizontal = "center", vertical = "center", wrap_text = True)
+            cell.alignment = Alignment(horizontal = 'center', vertical = 'center', wrap_text = True)
             cell.border = borde_fino
 
         worksheet.cell(row = 4, column = 1).value = 'Modelo \ Frecuencia (Hz)'
         worksheet.cell(row = 4, column = 1).font = fuente_encabezado
         worksheet.cell(row = 4, column = 1).fill = relleno_encabezado
-        worksheet.cell(row = 4, column = 1).alignment = Alignment(horizontal = "center", vertical = "center")
+        worksheet.cell(row = 4, column = 1).alignment = Alignment(horizontal = 'center', vertical = 'center')
 
         for col_idx in range(2, len(res.columns) + 2):
             cell = worksheet.cell(row = 4, column = col_idx)
             cell.font = fuente_encabezado
             cell.fill = relleno_encabezado
-            cell.alignment = Alignment(horizontal = "center", vertical = "center")
+            cell.alignment = Alignment(horizontal = 'center', vertical = 'center')
         
         for row_idx in range(2, len(res.index) + 2):
             worksheet.cell(row = row_idx + 3, column = 1).font = fuente_modelos
@@ -203,15 +208,105 @@ def save_xlsx(res, material, modelos):
                 cell.font = fuente_data
                 cell.border = borde_fino
                 cell.number_format = '0.0'
-                cell.alignment = Alignment(horizontal = "right")
+                cell.alignment = Alignment(horizontal = 'right')
 
         worksheet.row_dimensions[1].height = 36
         worksheet.row_dimensions[2].height = 36
 
         worksheet.column_dimensions['A'].width = 24
-        for col_idx in range (2, 33):
-            letra_col = worksheet.cell(row = 1, column = col_idx).column_letter
-            worksheet.column_dimensions[letra_col].width = 16
+
+        col_fin_valores = len(res.columns) + 1
+
+        for col_idx in range(2, col_fin_valores + 1):
+            cell = worksheet.cell(row=4, column=col_idx)
+
+            if cell.value is not None:
+                cell.value = str(cell.value)
+
+        colores = [
+            '1F497D',
+            'C00000',
+            '76933C',
+            '60497A',
+            'E36C0A',
+            '948A54',
+            '31859C'
+        ]
+
+        grafico = LineChart()
+        grafico.style = 13
+        grafico.grouping = 'standard'
+
+        grafico.layout = Layout(
+            manualLayout = ManualLayout(
+                x = 0.02,   # Mueve la cuadrícula a la derecha (da aire al eje Y: R [dB])
+                y = 0.02,   # Baja la cuadrícula (da aire al título principal)
+                w = 0.75,   # Achica el ancho de la cuadrícula (da espacio a la leyenda)
+                h = 0.65    # Achica el alto de la cuadrícula (da aire abajo al eje X: Frecuencia)
+            )
+        )
+
+        grafico.x_axis.axPos = 'b'
+        grafico.x_axis.delete = False
+        grafico.x_axis.title = 'Frecuencia [Hz]'
+        grafico.x_axis.tickLblPos = 'low'
+        grafico.x_axis.crosses = 'min'
+        grafico.y_axis.scaling.min = 20
+        grafico.y_axis.scaling.max = 20000
+        grafico.x_axis.majorGridlines = ChartLines()
+
+        grafico.y_axis.axPos = 'l'
+        grafico.y_axis.delete = False
+        grafico.y_axis.title = 'R [dB]'
+        grafico.y_axis.tickLblPos = 'nextTo'
+        grafico.y_axis.crosses = 'min'
+        grafico.y_axis.scaling.min = 0
+        grafico.y_axis.scaling.max = 120
+        grafico.y_axis.majorUnit = 10
+        grafico.y_axis.majorGridlines = ChartLines()
+
+        xvalues = Reference(worksheet, min_col = 2, min_row = 4, max_col = col_fin_valores, max_row = 4)
+
+        for i in range(len(res.index)):
+            fila_actual = 5 + i
+            yvalues = Reference(worksheet, min_col = 2, min_row = fila_actual, max_col = col_fin_valores, max_row = fila_actual)
+
+            serie = Series(
+                idx = i,
+                order = i,
+                val = NumDataSource(numRef = NumRef(f = yvalues)),
+            )
+
+            nombre_modelo = str(worksheet.cell(row = fila_actual, column = 1).value)
+            serie.tx = SeriesLabel(v = nombre_modelo)
+
+            serie.marker.symbol = 'none'
+            serie.spPr.ln.solidFill = colores[i % len(colores)]
+            serie.spPr.ln.w = 25000
+            serie.smooth = True
+
+            grafico.series.append(serie)
+
+        grafico.set_categories(xvalues)
+
+        if len(res.index) == 1:
+            grafico.legend = None
+            grafico.title = f'R (Modelo {str(res.index[0])}) - panel simple de {material.tipo.lower()} de {str(material.dim[0]).replace(".", ",")}m x {str(material.dim[1]).replace(".", ",")}m x {str(material.dim[2]).replace(".", ",")}m'
+        else:
+            grafico.legend = Legend(legendPos='r', overlay=False)
+
+            mods = []
+            for idx in res.index:
+                mods.append(idx)
+            
+            grafico.title = f'R (Modelos {", ".join(mods)}) - panel simple de {material.tipo.lower()} de {str(material.dim[0]).replace(".", ",")}m x {str(material.dim[1]).replace(".", ",")}m x {str(material.dim[2]).replace(".", ",")}m'
+
+        grafico.width = 20
+        grafico.height = 16
+
+        fila_grafico = len(res.index) + 8
+
+        worksheet.add_chart(grafico, f'A{fila_grafico}')
 
 def graficar(ax, f, r, nombre, color):
     ax.plot(f, r, label = f'{nombre}', color = color)
