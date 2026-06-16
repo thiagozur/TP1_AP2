@@ -1,15 +1,15 @@
 import numpy as np
 from funciones import calc_eta_total, sigma as sig, shear
 
-def davy_panel_simple(f, rho, e, sigma, dim, m, eta, fc, rho0 = 1.18, c0 = 343):
+def davy_panel_simple(f, material, fc, rho0 = 1.18, c0 = 343):
     cos21max = 0.9
 
-    rho_sup = rho * dim[2]
+    rho_sup = material.rho * material.dim[2]
 
     normal = rho0 * c0 / (np.pi * f * rho_sup)
     normal2 = normal ** 2
 
-    esp = 2 * dim[0] * dim[1] / (dim[0] + dim[1])
+    esp = 2 * material.dim[0] * material.dim[1] / (material.dim[0] + material.dim[1])
 
     cos2l = c0 / (2 * np.pi * f * esp)
 
@@ -27,17 +27,17 @@ def davy_panel_simple(f, rho, e, sigma, dim, m, eta, fc, rho0 = 1.18, c0 = 343):
     
     g = np.sqrt(r)
 
-    rad = sig(g, f, dim, c0)
+    rad = sig(g, f, material, c0)
     rad2 = rad ** 2
 
-    netatotal = calc_eta_total(f, m, eta) + rad * normal
+    netatotal = calc_eta_total(f, material) + rad * normal
 
     z = 2 / netatotal
 
     y = np.arctan(z) - np.arctan(z * (1 - ratio))
 
     tau2 = normal2 * rad2 * y / (netatotal * 2 * ratio)
-    tau2 *= shear(f, rho, e, sigma, dim)
+    tau2 *= shear(f, material.rho, material.e, material.sigma, material.dim)
 
     if f < fc:
         tau = tau1 + tau2
@@ -48,7 +48,7 @@ def davy_panel_simple(f, rho, e, sigma, dim, m, eta, fc, rho0 = 1.18, c0 = 343):
 
     return panel_simple
 
-def davy(f, rho, e, sigma, dim, m, eta, fc, rho0 = 1.18, c0 = 343):
+def davy(f, material, fc, rho0 = 1.18, c0 = 343):
     array = np.zeros_like(f, dtype=float)
 
     limit = 2 ** (1 / (2 * 3))
@@ -58,7 +58,7 @@ def davy(f, rho, e, sigma, dim, m, eta, fc, rho0 = 1.18, c0 = 343):
         ratio = f / fc
 
         if ratio < (1 / limit) or ratio > limit:
-            array[i] = davy_panel_simple(f, rho, e, sigma, dim, m, eta, fc, rho0, c0)
+            array[i] = davy_panel_simple(f, material, fc, rho0, c0)
         else:
             av_panel_simple = 0.0
 
@@ -66,7 +66,7 @@ def davy(f, rho, e, sigma, dim, m, eta, fc, rho0 = 1.18, c0 = 343):
                 factor = 2 ** ((2 * j - 1 - averages) / (2 * averages * 3))
                 f_aux = f * factor
 
-                r_aux = davy_panel_simple(f_aux, rho, e, sigma, dim, m, eta, fc, rho0, c0)
+                r_aux = davy_panel_simple(f_aux, material, fc, rho0, c0)
 
                 aux = 10 ** (-r_aux / 10)
                 av_panel_simple += aux

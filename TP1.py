@@ -44,6 +44,7 @@ class AppR(ctk.CTk):
     def __init__(self):
         super().__init__()
 
+        #variables para almacenar el estado de selección de cada modelo
         self.check_fisico_teorico = ctk.BooleanVar(value = False)
         self.check_iso = ctk.BooleanVar(value = False)
         self.check_cremer = ctk.BooleanVar(value = False)
@@ -75,7 +76,7 @@ class AppR(ctk.CTk):
         self.menu_ind.pack(padx = 20, pady = 5, fill = 'x')
         self.menu_ind.set(mats[9])
 
-        #dimensiones
+        #entradas dimensiones
         self.label_alto = ctk.CTkLabel(self.sidebar, text = 'Alto (m):')
         self.label_alto.pack(padx = 20, pady = 5, anchor = 'w')
         self.input_alto = ctk.CTkEntry(self.sidebar, placeholder_text = '3')
@@ -163,6 +164,7 @@ class AppR(ctk.CTk):
         self.canvas = FigureCanvasTkAgg(self.fig, master = self.frame_grafico)
         self.canvas.get_tk_widget().pack(padx=20, pady=20, fill='both', expand=True)
 
+        #inicialización del popup
         self.popup = None
 
         #variables de selectores
@@ -176,15 +178,19 @@ class AppR(ctk.CTk):
         self.r_sharp = None
         self.r_davy = None
 
+        #llamada a función onclose
         self.protocol('WM_DELETE_WINDOW', self.cerrar)
-    
+
+    #función onclose
     def cerrar(self):
+        #cierre ordenado del popup
         if self.popup and self.popup.winfo_exists():
             if hasattr(self.popup, 'fade_id') and self.popup.fade_id:
                 self.popup.after_cancel(self.popup.fade_id)
 
             self.popup.destroy()
 
+        #cierre ordenado del gráfico
         try:
             plt.close(self.fig)
             self.canvas.get_tk_widget().destroy()
@@ -195,9 +201,11 @@ class AppR(ctk.CTk):
 
         self.destroy()
 
+    #función actualización del material seleccionado
     def cambiar_material(self, mat):
         self.ind_sel = mats.index(mat)
-    
+
+    #función configuración y refresh de los ejes
     def configurar_ejes_grafico(self, material = None):
         self.ax.clear()
         self.ax.set_xscale('log')
@@ -215,6 +223,7 @@ class AppR(ctk.CTk):
         self.ax.set_xticks(frecuencias)
         self.ax.set_xticklabels([str(int(f)) if float(f).is_integer() else float(f) for f in frecuencias], rotation = 45)
 
+    #función generación de popup
     def mostrar_error(self, error):
         if hasattr(self, 'popup') and self.popup and self.popup.winfo_exists():
             self.popup.destroy()
@@ -276,8 +285,10 @@ class AppR(ctk.CTk):
         popup.protocol('WM_DELETE_WINDOW', onclose)
         popup.fade_id = popup.after(2500, fade)
 
+    #función de cálculo de resultados y graficación
     def calcular(self):
         try:
+            #adquisición de datos desde los inputs
             dim = (float(self.input_alto.get().replace(',', '.')), float(self.input_ancho.get().replace(',', '.')), float(self.input_espesor.get().replace(',', '.')) / 100)
             ind = self.ind_sel
 
@@ -288,34 +299,35 @@ class AppR(ctk.CTk):
                 self.material = Material(db.iloc[ind, 1], db.iloc[ind, 2], db.iloc[ind, 3], db.iloc[ind, 4], db.iloc[ind, 5], dim)
 
                 #cálculo de la frecuencia crítica y de la frecuencia de densidad
-                fc = calc_fc(self.material.e, self.material.rho, self.material.dim, c)
-                fd = calc_fd(self.material.m, self.material.e, self.material.b, self.material.rho)
+                fc = calc_fc(self.material, c)
+                fd = calc_fd(self.material)
 
                 self.configurar_ejes_grafico(self.material)
 
-                #cálculo de r con los modelos
+                #cálculo de r con los modelos y graficación
                 if self.check_fisico_teorico.get():
-                    self.r_fisico_teorico = fisico_teorico(frecuencias, self.material.m, self.material.eta, fc, fd, rho0, c)
+                    self.r_fisico_teorico = fisico_teorico(frecuencias, self.material, fc, fd, rho0, c)
                     graficar(self.ax, frecuencias, self.r_fisico_teorico, 'Físico-Teórico', '#E69F00')
                     self.ax.axvline(x = fd, color = 'black', ls = '--', label = f'Frecuencia de densidad (≈{round(fd)} Hz)')
 
                 if self.check_iso.get():
-                    self.r_iso = iso(frecuencias, self.material.m, self.material.eta, self.material.dim, fc, rho0, c)
+                    self.r_iso = iso(frecuencias, self.material, fc, rho0, c)
                     graficar(self.ax, frecuencias, self.r_iso, 'ISO 12354-1', '#56B4E9')  
 
                 if self.check_cremer.get():
-                    self.r_cremer = cremer(frecuencias, self.material.m, self.material.eta, fc, fd)
+                    self.r_cremer = cremer(frecuencias, self.material, fc, fd)
                     graficar(self.ax, frecuencias, self.r_cremer, 'Cremer', "#3AA641")
                     self.ax.axvline(x = fd, color = 'black', ls = '--', label = f'Frecuencia de densidad (≈{round(fd)} Hz)')
 
                 if self.check_sharp.get():
-                    self.r_sharp = sharp(frecuencias, self.material.m, self.material.eta, fc, rho0, c)
+                    self.r_sharp = sharp(frecuencias, self.material, fc, rho0, c)
                     graficar(self.ax, frecuencias, self.r_sharp, 'Sharp', "#E982F3")
                 
                 if self.check_davy.get():
-                    self.r_davy = davy(frecuencias, self.material.rho, self.material.e, self.material.sigma, self.material.dim, self.material.m, self.material.eta, fc, rho0, c)
+                    self.r_davy = davy(frecuencias, self.material, fc, rho0, c)
                     graficar(self.ax, frecuencias, self.r_davy, 'Davy', "#B51919")
 
+                #vaciado de los vectores de resultados de los modelos no seleccionados
                 if not self.check_fisico_teorico.get():
                     self.r_fisico_teorico = None
                 
@@ -341,8 +353,10 @@ class AppR(ctk.CTk):
         except ZeroDivisionError:
             self.mostrar_error('Advertencia: entrada inadecuada. Las dimensiones no pueden ser cero')
 
+    #función de guardado de los datos
     def guardar(self):
         try:
+            #creación del DataFrame con los resultados
             data_R = [self.r_fisico_teorico, self.r_iso, self.r_cremer, self.r_sharp, self.r_davy]
             modelos = ['Físico-teórico', 'ISO 12354-1', 'Cremer', 'Sharp', 'Davy']
                     

@@ -17,33 +17,33 @@ def calc_b(e, sigma, dim):
     b = (e * (dim[2] ** 3)) / (12 * (1 - sigma ** 2))
     return b
 
-def calc_fc(e, rho, dim, c0 = 343):
-    fc = ((c0 ** 2) / (1.8 * dim[2])) * np.sqrt(rho / e)
+def calc_fc(material, c0 = 343):
+    fc = ((c0 ** 2) / (1.8 * material.dim[2])) * np.sqrt(material.rho / material.e)
     return fc
 
-def calc_fd(m, e, b, rho):
-    fd = (e / (2 * np.pi * rho)) * np.sqrt(m / b)
+def calc_fd(material):
+    fd = (material.e / (2 * np.pi * material.rho)) * np.sqrt(material.m / material.b)
     return fd
 
-def calc_f11(fc, dim, c0 = 343):
-    f11 = ((c0 ** 2) / (4 * fc)) * ((1 / (dim[0] ** 2)) + (1 / (dim[1] ** 2)))
+def calc_f11(fc, material, c0 = 343):
+    f11 = ((c0 ** 2) / (4 * fc)) * ((1 / (material.dim[0] ** 2)) + (1 / (material.dim[1] ** 2)))
     return f11
 
-def calc_eta_total(f, m, eta):
-    eta_total = eta + (m / (485 * np.sqrt(f)))
+def calc_eta_total(f, material):
+    eta_total = material.eta + (material.m / (485 * np.sqrt(f)))
     return eta_total
 
-def ley_masa(f, m):
-    r = 20 * np.log10(m * f) - 47
+def ley_masa(f, material):
+    r = 20 * np.log10(material.m * f) - 47
     return r
 
-def sigma(g, f, dim, c0 = 343):
+def sigma(g, f, material, c0 = 343):
     w = 1.3
     beta = 0.234
     n = 2
 
-    s = dim[0] * dim[1]
-    u = 2 * (dim[0] + dim[1])
+    s = material.dim[0] * material.dim[1]
+    u = 2 * (material.dim[0] + material.dim[1])
 
     twoa = 4 * (s / u)
 
@@ -96,14 +96,14 @@ def shear(f, rho, e, sigma, dim):
 
     return out
 
-def calc_radfree(f, fc, dim, c0 = 343):
-    l1 = max(dim[0], dim[1])
-    l2 = min(dim[0], dim[1])
+def calc_radfree(f, fc, material, c0 = 343):
+    l1 = max(material.dim[0], material.dim[1])
+    l2 = min(material.dim[0], material.dim[1])
     
     sig2 = 4 * l1 * l2 * ((f / c0) ** 2)
     sig3 = np.sqrt((2 * np.pi * f * (l1 + l2)) / (16 * c0))
 
-    f11 = calc_f11(fc, dim, c0)
+    f11 = calc_f11(fc, material, c0)
 
     if f11 <= (0.5 * fc):
         if f >= fc:    
@@ -131,9 +131,9 @@ def calc_radfree(f, fc, dim, c0 = 343):
 
     return sig
 
-def calc_radforced(f, dim, c0 = 343):
-    l1 = max(dim[0], dim[1])
-    l2 = min(dim[0], dim[1])
+def calc_radforced(f, material, c0 = 343):
+    l1 = max(material.dim[0], material.dim[1])
+    l2 = min(material.dim[0], material.dim[1])
     k0 = (2 * np.pi * f ) / c0
 
     lamb = -0.964 - (0.5 + l2 / (np.pi * l1)) * np.log(l2 / l1) + (5 * l2) / (2 * np.pi * l1) - 1 / (4 * np.pi * l1 * l2 * (k0 ** 2))
