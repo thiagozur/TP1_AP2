@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+import seaborn as sns
 from openpyxl.utils import get_column_letter
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from openpyxl.chart import LineChart, Reference
@@ -313,5 +314,4 @@ def save_xlsx(res, material, modelos):
         worksheet.add_chart(grafico, f'A{fila_grafico}')
 
 def graficar(ax, f, r, nombre, color):
-    ax.plot(f, r, label = f'{nombre}', color = color)
-    ax.scatter(f, r, s = 20, color = color)
+    sns.lineplot(x = f, y = r, ax = ax, label = nombre, color = color, marker = 'o', markersize = 6)

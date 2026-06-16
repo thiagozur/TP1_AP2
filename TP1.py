@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+import seaborn as sns
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import customtkinter as ctk
@@ -155,6 +156,8 @@ class AppR(ctk.CTk):
         self.btn_guardar.pack(padx = 20, fill = 'x', pady = 20)
 
         #gráfico
+        sns.set_theme(style = "whitegrid", rc = {"axes.facecolor": "#F8F9FA", "figure.facecolor": "#F8F9FA"})
+
         self.frame_grafico = ctk.CTkFrame(self, corner_radius = 10)
         self.frame_grafico.grid(row = 0, column = 1, padx = 20, pady = 20, sticky = 'nsew')
 
@@ -213,7 +216,7 @@ class AppR(ctk.CTk):
         self.ax.set_ylabel('R [dB]')
 
         if material != None:
-            self.ax.set_title(f'R para un panel simple de {material.tipo.lower()} de {str(material.dim[0]).replace(".", ",")}m x {str(material.dim[1]).replace(".", ",")}m x {str(material.dim[2]).replace(".", ",")}m', fontsize = '16')
+            self.ax.set_title(f'R para un panel simple de {material.tipo.lower()} de {str(material.dim[0]).replace(".", ",")}m x {str(material.dim[1]).replace(".", ",")}m x {str(material.dim[2]).replace(".", ",")}m', fontsize = '18')
         else:
             self.ax.set_title('')
 
@@ -305,27 +308,52 @@ class AppR(ctk.CTk):
                 self.configurar_ejes_grafico(self.material)
 
                 #cálculo de R con los modelos y graficación
+                colores = sns.color_palette("muted", 5)
+
+                self.ax.axvline(x = fc, color = 'black', ls = '--', label = f'Frecuencia de coincidencia (≈{round(fc)} Hz)')
+                fd_placed = False
+
                 if self.check_fisico_teorico.get():
                     self.r_fisico_teorico = fisico_teorico(frecuencias, self.material, fc, fd, rho0, c)
-                    graficar(self.ax, frecuencias, self.r_fisico_teorico, 'Físico-Teórico', '#E69F00')
-                    self.ax.axvline(x = fd, color = 'black', ls = '--', label = f'Frecuencia de densidad (≈{round(fd)} Hz)')
+                    graficar(self.ax, frecuencias, self.r_fisico_teorico, 'Físico-Teórico', colores[0])
+
+                    if not fd_placed:
+                        self.ax.axvline(x = fd, color = 'black', ls = '--', label = f'Frecuencia de densidad (≈{round(fd)} Hz)')
+                        fd_placed = True
 
                 if self.check_iso.get():
                     self.r_iso = iso(frecuencias, self.material, fc, rho0, c)
-                    graficar(self.ax, frecuencias, self.r_iso, 'ISO 12354-1', '#56B4E9')  
+                    graficar(self.ax, frecuencias, self.r_iso, 'ISO 12354-1', colores[1])  
 
                 if self.check_cremer.get():
                     self.r_cremer = cremer(frecuencias, self.material, fc, fd)
-                    graficar(self.ax, frecuencias, self.r_cremer, 'Cremer', "#3AA641")
-                    self.ax.axvline(x = fd, color = 'black', ls = '--', label = f'Frecuencia de densidad (≈{round(fd)} Hz)')
+                    graficar(self.ax, frecuencias, self.r_cremer, 'Cremer', colores[2])
+                    
+                    if not fd_placed:
+                        self.ax.axvline(x = fd, color = 'black', ls = '--', label = f'Frecuencia de densidad (≈{round(fd)} Hz)')
+                        fd_placed = True
 
                 if self.check_sharp.get():
                     self.r_sharp = sharp(frecuencias, self.material, fc, rho0, c)
-                    graficar(self.ax, frecuencias, self.r_sharp, 'Sharp', "#E982F3")
+                    graficar(self.ax, frecuencias, self.r_sharp, 'Sharp', colores[3])
                 
                 if self.check_davy.get():
                     self.r_davy = davy(frecuencias, self.material, fc, rho0, c)
-                    graficar(self.ax, frecuencias, self.r_davy, 'Davy', "#B51919")
+                    graficar(self.ax, frecuencias, self.r_davy, 'Davy', colores[4])
+
+                handles, labels = self.ax.get_legend_handles_labels()
+
+                handles_verticales = [h for h, l in zip(handles, labels) if "Frecuencia" in l]
+                labels_verticales = [l for l in labels if "Frecuencia" in l]
+
+                handles_modelos = [h for h, l in zip(handles, labels) if "Frecuencia" not in l]
+                labels_modelos = [l for l in labels if "Frecuencia" not in l]
+
+                handles_ordered = handles_verticales + handles_modelos
+                labels_ordered = labels_verticales + labels_modelos
+
+                self.ax.legend(handles_ordered, labels_ordered, loc="upper left", frameon = True, facecolor = 'white', edgecolor = 'none', fontsize = 12)
+                self.canvas.draw()
 
                 #vaciado de los vectores de resultados de los modelos no seleccionados
                 if not self.check_fisico_teorico.get():
@@ -342,10 +370,6 @@ class AppR(ctk.CTk):
                 
                 if not self.check_davy.get():
                     self.r_davy = None
-
-                self.ax.axvline(x = fc, color = 'black', ls = '--', label = f'Frecuencia de coincidencia (≈{round(fc)} Hz)')
-                self.ax.legend(loc="upper left")
-                self.canvas.draw()
 
         except ValueError:
             self.mostrar_error('Advertencia: entrada inadecuada. Las dimensiones deben ser números válidos')
