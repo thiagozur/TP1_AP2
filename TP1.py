@@ -363,7 +363,7 @@ class AppR(ctk.CTk):
             else:
                 self.mostrar_error('Error de guardado. Seleccione al menos un modelo')
 
-        except ZeroDivisionError:
+        except:
             self.mostrar_error('Error de guardado. Introduzca los datos correctamente')
 
 if __name__ == '__main__':
