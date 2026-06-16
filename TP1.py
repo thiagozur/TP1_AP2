@@ -282,7 +282,7 @@ class AppR(ctk.CTk):
             ind = self.ind_sel
 
             if any(n < 0 for n in dim):
-                self.mostrar_error('Advertencia: entrada inadecuada. Las dimensiones no pueden ser números negativos.')
+                self.mostrar_error('Advertencia: entrada inadecuada. Las dimensiones no pueden ser números negativos')
             else:
                 #instanciación de un objeto de la clase 'Material'
                 self.material = Material(db.iloc[ind, 1], db.iloc[ind, 2], db.iloc[ind, 3], db.iloc[ind, 4], db.iloc[ind, 5], dim)
@@ -336,10 +336,10 @@ class AppR(ctk.CTk):
                 self.canvas.draw()
 
         except ValueError:
-            self.mostrar_error('Advertencia: entrada inadecuada. Las dimensiones deben ser números válidos.')
+            self.mostrar_error('Advertencia: entrada inadecuada. Las dimensiones deben ser números válidos')
 
         except ZeroDivisionError:
-            self.mostrar_error('Advertencia: entrada inadecuada. Las dimensiones no pueden ser cero.')
+            self.mostrar_error('Advertencia: entrada inadecuada. Las dimensiones no pueden ser cero')
 
     def guardar(self):
         try:
@@ -359,6 +359,7 @@ class AppR(ctk.CTk):
 
                 #guardado en formato excel
                 save_xlsx(res, self.material, modelos)
+                self.mostrar_error('Archivo guardado correctamente')
 
             else:
                 self.mostrar_error('Error de guardado. Seleccione al menos un modelo')

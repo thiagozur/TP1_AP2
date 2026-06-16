@@ -219,7 +219,6 @@ def save_xlsx(res, material, modelos):
         col_fin_valores = len(res.columns) + 1
 
         for i in range(2, 33):
-            print(i, get_column_letter(i))
             worksheet.column_dimensions[get_column_letter(i)].width = 15
 
         for col_idx in range(2, col_fin_valores + 1):
