@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+from openpyxl.utils import get_column_letter
 
 def calc_m(rho, dim):
     m = rho * dim[2]
@@ -139,10 +140,24 @@ def calc_radforced(f, dim, c0 = 343):
     return sf
 
 def save_xlsx(res, material, modelos):
+    mat_in_cols = ['Material', 'Densidad [kg/m³]', 'Módulo de Young [N/m²]', 'Factor de pérdidas', 'Módulo de Poisson', 'Dimensiones [m] x [m] x [m]']
+    mat_in_ind = ['1']
+    mat_in_data = [[material.tipo, material.rho, material.e, material.eta, material.sigma, ' x '.join([str(d) for d in material.dim])]]
+    
+    mat_in = pd.DataFrame(
+                data = mat_in_data,
+                index = mat_in_ind,
+                columns = mat_in_cols
+                )
+
     with pd.ExcelWriter(f'./res/resultados_{material.tipo.lower()}_{str(material.dim[0]).replace(".", ",")}x{str(material.dim[1]).replace(".", ",")}x{str(material.dim[2]).replace(".", ",")} ({", ".join(modelos)}).xlsx', engine = 'openpyxl') as writer:
-        res.to_excel(writer, sheet_name = 'R')
+        mat_in.to_excel(writer, sheet_name = 'R', index = False)
+        res.to_excel(writer, sheet_name = 'R', startrow = 3)
         worksheet = writer.sheets['R']
 
+        relleno_gris = PatternFill(start_color="696969", end_color='696969', fill_type='solid')
+        relleno_gris_claro = PatternFill(start_color="BABABA", end_color='BABABA', fill_type='solid')
+        fuente_encabezado_gris = Font(name='Calibri', size = 11, bold=True, color="FFFFFF")
         relleno_encabezado = PatternFill(start_color = '1F497D', end_color = '1F497D', fill_type = 'solid')
         fuente_encabezado = Font(name = 'Calibri', size = 11, bold = True, color = 'FFFFFF')
         fuente_data = Font(name = 'Calibri', size = 11)
@@ -154,32 +169,49 @@ def save_xlsx(res, material, modelos):
             bottom = Side(style = 'thin', color = 'D9D9D9')
         )
 
-        worksheet.cell(row = 1, column = 1).value = 'Modelo / Frecuencia (Hz)'
-        worksheet.cell(row =1, column = 1).font = fuente_encabezado
-        worksheet.cell(row = 1, column = 1).fill = relleno_encabezado
-        worksheet.cell(row = 1, column = 1).alignment = Alignment(horizontal = "center", vertical = "center")
-        worksheet.column_dimensions['A'].width = 24
+        for col_idx in range(1, len(mat_in.columns) + 1):
+            cell = worksheet.cell(row = 1, column = col_idx)
+            cell.font = fuente_encabezado_gris
+            cell.fill = relleno_gris
+            cell.alignment = Alignment(horizontal = "center", vertical = "center", wrap_text = True)
+            cell.border = borde_fino
+            
+        for col_idx in range(1, len(mat_in.columns) + 1):
+            cell = worksheet.cell(row = 2, column = col_idx)
+            cell.font = fuente_data
+            cell.fill = relleno_gris_claro
+            cell.alignment = Alignment(horizontal = "center", vertical = "center", wrap_text = True)
+            cell.border = borde_fino
+
+        worksheet.cell(row = 4, column = 1).value = 'Modelo \ Frecuencia (Hz)'
+        worksheet.cell(row = 4, column = 1).font = fuente_encabezado
+        worksheet.cell(row = 4, column = 1).fill = relleno_encabezado
+        worksheet.cell(row = 4, column = 1).alignment = Alignment(horizontal = "center", vertical = "center")
 
         for col_idx in range(2, len(res.columns) + 2):
-            cell = worksheet.cell(row = 1, column = col_idx)
+            cell = worksheet.cell(row = 4, column = col_idx)
             cell.font = fuente_encabezado
             cell.fill = relleno_encabezado
             cell.alignment = Alignment(horizontal = "center", vertical = "center")
-
-            letra_col = cell.column_letter
-            worksheet.column_dimensions[letra_col].width = 10
         
         for row_idx in range(2, len(res.index) + 2):
-            worksheet.cell(row = row_idx, column = 1).font = fuente_modelos
-            worksheet.cell(row = row_idx, column = 1).border = borde_fino
+            worksheet.cell(row = row_idx + 3, column = 1).font = fuente_modelos
+            worksheet.cell(row = row_idx + 3, column = 1).border = borde_fino
 
             for col_idx in range(2, len(res.columns) + 2):
-                cell = worksheet.cell(row = row_idx, column = col_idx)
+                cell = worksheet.cell(row = row_idx + 3, column = col_idx)
                 cell.font = fuente_data
                 cell.border = borde_fino
                 cell.number_format = '0.0'
                 cell.alignment = Alignment(horizontal = "right")
-    return
+
+        worksheet.row_dimensions[1].height = 36
+        worksheet.row_dimensions[2].height = 36
+
+        worksheet.column_dimensions['A'].width = 24
+        for col_idx in range (2, 33):
+            letra_col = worksheet.cell(row = 1, column = col_idx).column_letter
+            worksheet.column_dimensions[letra_col].width = 16
 
 def graficar(ax, f, r, nombre, color):
     ax.plot(f, r, label = f'{nombre}', color = color)

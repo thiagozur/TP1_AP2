@@ -276,17 +276,6 @@ class AppR(ctk.CTk):
         popup.protocol('WM_DELETE_WINDOW', onclose)
         popup.fade_id = popup.after(2500, fade)
 
-    def refrescar_datos(self):
-        try:
-            self.dim = (float(self.input_alto.get().replace(',', '.')), float(self.input_ancho.get().replace(',', '.')), float(self.input_espesor.get().replace(',', '.')) / 100)
-            ind = self.ind_sel  
-            self.configurar_ejes_grafico(self.material)
-        except ValueError:
-            self.mostrar_error('Advertencia: entrada inadecuada. Las dimensiones deben ser números válidos.')
-
-        except ZeroDivisionError:
-            self.mostrar_error('Advertencia: entrada inadecuada. Las dimensiones no pueden ser cero.')
-
     def calcular(self):
         try:
             dim = (float(self.input_alto.get().replace(',', '.')), float(self.input_ancho.get().replace(',', '.')), float(self.input_espesor.get().replace(',', '.')) / 100)
@@ -328,6 +317,21 @@ class AppR(ctk.CTk):
                     self.r_davy = davy(frecuencias, self.material.rho, self.material.e, self.material.sigma, self.material.dim, self.material.m, self.material.eta, fc, rho0, c)
                     graficar(self.ax, frecuencias, self.r_davy, 'Davy', "#B51919")
 
+                if not self.check_fisico_teorico.get():
+                    self.r_fisico_teorico = None
+                
+                if not self.check_iso.get():
+                    self.r_iso = None
+                
+                if not self.check_cremer.get():
+                    self.r_cremer = None
+
+                if not self.check_sharp.get():
+                    self.r_sharp = None
+                
+                if not self.check_davy.get():
+                    self.r_davy = None
+
                 self.ax.axvline(x = fc, color = 'black', ls = '--', label = f'Frecuencia de coincidencia (≈{round(fc)} Hz)')
                 self.ax.legend(loc="upper left")
                 self.canvas.draw()
@@ -358,7 +362,8 @@ class AppR(ctk.CTk):
                 save_xlsx(res, self.material, modelos)
 
             else:
-                self.mostrar_error('Error de guardado. Seleccione al menos un modelo')   
+                self.mostrar_error('Error de guardado. Seleccione al menos un modelo')
+
         except:
             self.mostrar_error('Error de guardado. Introduzca los datos correctamente')
 
