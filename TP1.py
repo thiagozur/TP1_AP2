@@ -4,12 +4,17 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import customtkinter as ctk
+from pathlib import Path
 from funciones import calc_m, calc_b, calc_fc, calc_fd, save_xlsx, graficar
-from fisico_teorico import fisico_teorico
 from cremer import cremer
 from sharp import sharp
 from davy import davy
 from iso import iso
+
+#creación de la carpeta de resultados (si no existe ya)
+script_dir = Path(__file__).parent
+carpeta_resultados = script_dir / 'res'
+carpeta_resultados.mkdir(parents = True, exist_ok = True)
 
 #definición de la clase 'Material'
 class Material:
@@ -46,7 +51,6 @@ class AppR(ctk.CTk):
         super().__init__()
 
         #variables para almacenar el estado de selección de cada modelo
-        self.check_fisico_teorico = ctk.BooleanVar(value = False)
         self.check_iso = ctk.BooleanVar(value = False)
         self.check_cremer = ctk.BooleanVar(value = False)
         self.check_sharp = ctk.BooleanVar(value = False)
@@ -54,7 +58,15 @@ class AppR(ctk.CTk):
 
         #creación y posicionamiento de componentes
         self.title('Calculadora de Aislamiento Acústico - Paneles Simples')
-        self.geometry("1200x800")
+        ancho = 1500
+        alto = 900
+        ancho_pantalla = self.winfo_screenwidth()
+        alto_pantalla = self.winfo_screenheight()
+
+        app_posx = int((ancho_pantalla - ancho) / 2)
+        app_posy = int((alto_pantalla - alto) / 2)
+
+        self.geometry(f'{ancho}x{alto}+{app_posx}+{app_posy}')
 
         self.grid_columnconfigure(0, weight = 1)
         self.grid_columnconfigure(1, weight = 3)
@@ -101,16 +113,6 @@ class AppR(ctk.CTk):
         self.btn_calcular.pack(padx = 20,  pady = 20, fill = 'x')
 
         #selectores de modelos
-        selector_fisico_teorico = ctk.CTkCheckBox(
-            self.sidebar,
-            text = 'Modelo Físico-Teórico',
-            variable = self.check_fisico_teorico,
-            command = self.calcular,
-            onvalue = True,
-            offvalue = False
-        )
-        selector_fisico_teorico.pack(padx = 20, pady = 5, anchor = 'w')
-
         selector_iso = ctk.CTkCheckBox(
             self.sidebar,
             text = 'Modelo ISO 12354-1',
@@ -175,7 +177,6 @@ class AppR(ctk.CTk):
         self.material = None
 
         #vectores de resultados
-        self.r_fisico_teorico = None
         self.r_iso = None
         self.r_cremer = None
         self.r_sharp = None
@@ -310,16 +311,8 @@ class AppR(ctk.CTk):
                 #cálculo de R con los modelos y graficación
                 colores = sns.color_palette("muted", 5)
 
-                self.ax.axvline(x = fc, color = 'black', ls = '--', label = f'Frecuencia de coincidencia (≈{round(fc)} Hz)')
+                self.ax.axvline(x = fc, color = 'black', ls = '--', label = f'Frecuencia de coincidencia (≈ {round(fc)} Hz)')
                 fd_placed = False
-
-                if self.check_fisico_teorico.get():
-                    self.r_fisico_teorico = fisico_teorico(frecuencias, self.material, fc, fd, rho0, c)
-                    graficar(self.ax, frecuencias, self.r_fisico_teorico, 'Físico-Teórico', colores[0])
-
-                    if not fd_placed:
-                        self.ax.axvline(x = fd, color = 'black', ls = '--', label = f'Frecuencia de densidad (≈{round(fd)} Hz)')
-                        fd_placed = True
 
                 if self.check_iso.get():
                     self.r_iso = iso(frecuencias, self.material, fc, rho0, c)
@@ -330,7 +323,7 @@ class AppR(ctk.CTk):
                     graficar(self.ax, frecuencias, self.r_cremer, 'Cremer', colores[2])
                     
                     if not fd_placed:
-                        self.ax.axvline(x = fd, color = 'black', ls = '--', label = f'Frecuencia de densidad (≈{round(fd)} Hz)')
+                        self.ax.axvline(x = fd, color = 'black', ls = '--', label = f'Frecuencia de densidad (≈ {round(fd)} Hz)')
                         fd_placed = True
 
                 if self.check_sharp.get():
@@ -356,9 +349,6 @@ class AppR(ctk.CTk):
                 self.canvas.draw()
 
                 #vaciado de los vectores de resultados de los modelos no seleccionados
-                if not self.check_fisico_teorico.get():
-                    self.r_fisico_teorico = None
-                
                 if not self.check_iso.get():
                     self.r_iso = None
                 
@@ -381,8 +371,8 @@ class AppR(ctk.CTk):
     def guardar(self):
         try:
             #creación del DataFrame con los resultados
-            data_R = [self.r_fisico_teorico, self.r_iso, self.r_cremer, self.r_sharp, self.r_davy]
-            modelos = ['Físico-teórico', 'ISO 12354-1', 'Cremer', 'Sharp', 'Davy']
+            data_R = [self.r_iso, self.r_cremer, self.r_sharp, self.r_davy]
+            modelos = ['ISO 12354-1', 'Cremer', 'Sharp', 'Davy']
                     
             pares = [(d, modelo) for d, modelo in zip(data_R, modelos) if d is not None]
 
