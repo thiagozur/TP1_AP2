@@ -5,16 +5,12 @@ import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import customtkinter as ctk
 from pathlib import Path
+import sys
 from funciones import calc_m, calc_b, calc_fc, calc_fd, save_xlsx, graficar
 from cremer import cremer
 from sharp import sharp
 from davy import davy
 from iso import iso
-
-#creación de la carpeta de resultados (si no existe ya)
-script_dir = Path(__file__).parent
-carpeta_resultados = script_dir / 'res'
-carpeta_resultados.mkdir(parents = True, exist_ok = True)
 
 #definición de la clase 'Material'
 class Material:
@@ -38,8 +34,26 @@ frecuencias = np.array([
 c = 343
 rho0 = 1.18
 
+#definición de ruta de escritura de datos
+def resolver_ruta_escritura(nombre_archivo: str) -> Path:
+    if hasattr(sys, 'frozen'):
+        carpeta_base = Path(sys.executable).parent
+    else:
+        carpeta_base = Path(".").resolve()
+    
+    carpeta_resultados = carpeta_base / "resultados"
+    carpeta_resultados.mkdir(parents=True, exist_ok=True)
+    
+    return carpeta_resultados / nombre_archivo
+
 #lectura del archivo de materiales y definición del material y sus dimensiones
-db = pd.read_excel('./materiales.xlsx')
+def resolver_ruta_lectura(ruta_relativa: str) -> Path:
+    if hasattr(sys, '_MEIPASS'):
+        return Path(sys._MEIPASS) / ruta_relativa
+    return Path('.').resolve() / ruta_relativa
+
+ruta_db = resolver_ruta_lectura('materiales.xlsx')
+db = pd.read_excel(ruta_db)
 mats = db['Material'].tolist()
 
 #interfaz gráfica
@@ -386,7 +400,7 @@ class AppR(ctk.CTk):
                 )
 
                 #guardado en formato excel
-                save_xlsx(res, self.material, modelos)
+                save_xlsx(res, self.material, modelos, resolver_ruta_escritura)
                 self.mostrar_error('Archivo guardado correctamente')
 
             else:

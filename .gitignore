@@ -1,4 +1,8 @@
 __pycache__/
-res/
+resultados/
 unused/
 entrega/
+outputs/
+build/
+dist/
+TP1.spec

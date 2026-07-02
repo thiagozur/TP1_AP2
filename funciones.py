@@ -146,7 +146,7 @@ def calc_radforced(f, material, c0 = 343):
 
     return sf
 
-def save_xlsx(res, material, modelos):
+def save_xlsx(res, material, modelos, solve):
     mat_in_cols = ['Material', 'Densidad [kg/m³]', 'Módulo de Young [N/m²]', 'Factor de pérdidas', 'Módulo de Poisson', 'Dimensiones [m] x [m] x [m]']
     mat_in_ind = ['1']
     mat_in_data = [[material.tipo, material.rho, material.e, material.eta, material.sigma, ' x '.join([str(d) for d in material.dim])]]
@@ -157,7 +157,8 @@ def save_xlsx(res, material, modelos):
                 columns = mat_in_cols
                 )
 
-    with pd.ExcelWriter(f'./res/resultados_{material.tipo.lower()}_{str(material.dim[0]).replace(".", ",")}x{str(material.dim[1]).replace(".", ",")}x{str(material.dim[2]).replace(".", ",")} ({", ".join(modelos)}).xlsx', engine = 'openpyxl') as writer:
+    nombre_archivo = f'resultados_{material.tipo.lower()}_{str(material.dim[0]).replace(".", ",")}x{str(material.dim[1]).replace(".", ",")}x{str(material.dim[2]).replace(".", ",")} ({", ".join(modelos)}).xlsx'
+    with pd.ExcelWriter(solve(nombre_archivo), engine = 'openpyxl') as writer:
         mat_in.to_excel(writer, sheet_name = 'R', index = False)
         res.to_excel(writer, sheet_name = 'R', startrow = 3)
         worksheet = writer.sheets['R']
